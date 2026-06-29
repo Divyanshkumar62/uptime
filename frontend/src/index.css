@@ -1,0 +1,362 @@
+/* ============================================================
+   Emerald Ops Design System — Deep Forest Dark Mode
+   Based on docs/frontend/DESIGN.md
+   ============================================================ */
+
+/* Font Imports */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  /* ---- Typography ---- */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Menlo', 'Monaco', monospace;
+
+  /* Display */
+  --font-display-lg: 48px;
+  --font-display-lg-lh: 56px;
+  --font-display-lg-ls: -0.02em;
+
+  /* Headlines */
+  --font-headline-lg: 32px;
+  --font-headline-lg-lh: 40px;
+  --font-headline-lg-ls: -0.01em;
+  --font-headline-lg-mobile: 24px;
+  --font-headline-lg-mobile-lh: 32px;
+  --font-headline-md: 24px;
+  --font-headline-md-lh: 32px;
+
+  /* Body */
+  --font-body-lg: 16px;
+  --font-body-lg-lh: 24px;
+  --font-body-md: 14px;
+  --font-body-md-lh: 20px;
+
+  /* Labels (Monospace) */
+  --font-label-md: 12px;
+  --font-label-md-lh: 16px;
+  --font-label-md-ls: 0.05em;
+
+  /* Code */
+  --font-code-sm: 13px;
+  --font-code-sm-lh: 18px;
+
+  /* Font sizes (backward compat) */
+  --font-size-xs: 0.75rem;     /* 12px */
+  --font-size-sm: 0.875rem;    /* 14px */
+  --font-size-md: 1rem;        /* 16px */
+  --font-size-lg: 1.25rem;     /* 20px */
+  --font-size-xl: 1.5rem;      /* 24px */
+  --font-size-2xl: 2rem;       /* 32px */
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* ---- Colors: Deep Forest Palette ---- */
+  /* Surface hierarchy */
+  --color-surface: #101419;
+  --color-surface-dim: #101419;
+  --color-surface-bright: #36393f;
+  --color-surface-container-lowest: #0a0e13;
+  --color-surface-container-low: #181c21;
+  --color-surface-container: #1c2025;
+  --color-surface-container-high: #262a30;
+  --color-surface-container-highest: #31353b;
+  --color-on-surface: #e0e2ea;
+  --color-on-surface-variant: #bbcabf;
+  --color-inverse-surface: #e0e2ea;
+  --color-inverse-on-surface: #2d3136;
+  --color-outline: #86948a;
+  --color-outline-variant: #3c4a42;
+  --color-surface-tint: #4edea3;
+
+  /* Primary (Emerald) */
+  --color-primary: #4edea3;
+  --color-on-primary: #003824;
+  --color-primary-container: #10b981;
+  --color-on-primary-container: #00422b;
+  --color-inverse-primary: #006c49;
+  --color-primary-hover: #6ffbbe;
+  --color-primary-fixed: #6ffbbe;
+  --color-primary-fixed-dim: #4edea3;
+  --color-on-primary-fixed: #002113;
+  --color-on-primary-fixed-variant: #005236;
+
+  /* Secondary */
+  --color-secondary: #45dfa4;
+  --color-on-secondary: #003825;
+  --color-secondary-container: #00bd85;
+  --color-on-secondary-container: #00452e;
+  --color-secondary-fixed: #68fcbf;
+  --color-secondary-fixed-dim: #45dfa4;
+  --color-on-secondary-fixed: #002114;
+  --color-on-secondary-fixed-variant: #005137;
+
+  /* Tertiary */
+  --color-tertiary: #68dba9;
+  --color-on-tertiary: #003825;
+  --color-tertiary-container: #3eb686;
+  --color-on-tertiary-container: #00422c;
+  --color-tertiary-fixed: #85f8c4;
+  --color-tertiary-fixed-dim: #68dba9;
+  --color-on-tertiary-fixed: #002114;
+  --color-on-tertiary-fixed-variant: #005137;
+
+  /* Error */
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+
+  /* Background & Legacy aliases */
+  --color-bg-base: #101419;
+  --color-bg-surface: #121820;
+  --color-bg-elevated: #1E262F;
+  --color-bg-deep: #0B0F14;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.12);
+
+  /* Text */
+  --color-text-primary: #e0e2ea;
+  --color-text-secondary: #bbcabf;
+  --color-text-muted: #86948a;
+
+  /* Status */
+  --color-success: #4edea3;
+  --color-destructive: #ffb4ab;
+  --color-warning: #f59e0b;
+  --color-inactive: #86948a;
+  --color-lime-accent: #D9F99D;
+
+  --color-success-bg: rgba(78, 222, 163, 0.1);
+  --color-destructive-bg: rgba(255, 180, 171, 0.1);
+  --color-inactive-bg: rgba(134, 148, 138, 0.1);
+  --color-warning-bg: rgba(245, 158, 11, 0.15);
+
+  --color-primary-text: #003824;
+
+  /* ---- Spacing (8px linear scale) ---- */
+  --space-xxs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+  --space-4xl: 64px;
+
+  /* ---- Radius ---- */
+  --radius-sm: 0.125rem;    /* 2px */
+  --radius-md: 0.25rem;     /* 4px */
+  --radius-lg: 0.5rem;      /* 8px */
+  --radius-xl: 0.75rem;     /* 12px */
+  --radius-full: 9999px;
+
+  /* ---- Shadows / Elevation ---- */
+  --shadow-low: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-high: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  --shadow-modal: 0px 4px 20px rgba(0, 0, 0, 0.5);
+
+  /* ---- Motion ---- */
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ---- Z-Index ---- */
+  --z-base: 0;
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-overlay: 1030;
+  --z-modal: 1040;
+  --z-popover: 1050;
+  --z-toast: 1060;
+
+  /* ---- Layout ---- */
+  --container-max: 1280px;
+  --gutter: 24px;
+  --margin-mobile: 16px;
+  --margin-desktop: 48px;
+}
+
+/* ---- Global Reset ---- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+  font-size: var(--font-body-md);
+  line-height: var(--font-body-md-lh);
+  transition: background-color var(--duration-normal) var(--easing-standard),
+              color var(--duration-normal) var(--easing-standard);
+}
+
+/* ---- Layout Classes ---- */
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+@media (max-width: 768px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.content-viewport {
+  padding: var(--space-xl);
+  max-width: var(--container-max);
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ---- Scrollbar Styling ---- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-outline-variant);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-outline);
+}
+
+/* ---- Focus & Hover Utilities ---- */
+.custom-btn {
+  position: relative;
+  overflow: hidden;
+}
+.custom-btn:hover {
+  filter: brightness(1.1);
+}
+.custom-btn:active {
+  filter: brightness(0.95);
+}
+.custom-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-bg-base), 0 0 0 4px var(--color-primary);
+}
+
+.toggle-bg:focus-within {
+  box-shadow: 0 0 0 2px var(--color-bg-base), 0 0 0 4px var(--color-primary);
+}
+
+/* ---- Input Focus ---- */
+.custom-input {
+  --focus-color: var(--color-primary);
+  --focus-ring: rgba(78, 222, 163, 0.2);
+}
+.custom-input.input-error {
+  --focus-color: var(--color-destructive);
+  --focus-ring: rgba(255, 180, 171, 0.2);
+}
+.custom-input:focus {
+  border-color: var(--focus-color) !important;
+  box-shadow: 0 0 0 3px var(--focus-ring) !important;
+}
+.custom-input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+/* ---- Search Input ---- */
+.search-input:focus {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(78, 222, 163, 0.2) !important;
+}
+
+/* ---- Animations ---- */
+@keyframes pulse-glow {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+  100% { opacity: 0.6; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--color-success);
+  border-radius: 50%;
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+/* ---- Glass Effect Utility ---- */
+.glass-effect {
+  background-color: var(--color-bg-elevated);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-modal);
+}
+
+/* ---- Card Base ---- */
+.card {
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--duration-fast) var(--easing-standard),
+              box-shadow var(--duration-fast) var(--easing-standard);
+}
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* ---- Monitor Row Hover ---- */
+.monitor-row:hover {
+  border-color: var(--color-primary) !important;
+  box-shadow: var(--shadow-medium) !important;
+}
+
+/* ---- Incident Item Hover ---- */
+.incident-item:hover {
+  background-color: var(--color-bg-elevated) !important;
+}
+
+/* ---- Status Glow (for operational badges) ---- */
+.status-glow {
+  box-shadow: 0 0 12px rgba(78, 222, 163, 0.3);
+}
+
+/* ---- Icon Glow Container ---- */
+.icon-glow-container {
+  box-shadow: 0 0 15px rgba(78, 222, 163, 0.12);
+  border: 1px solid var(--color-border);
+  transition: box-shadow var(--duration-normal) var(--easing-standard);
+}
+.icon-glow-container:hover {
+  box-shadow: 0 0 20px rgba(78, 222, 163, 0.25);
+}
