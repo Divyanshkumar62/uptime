@@ -264,7 +264,6 @@ export const mockMonitorHandlers = [
     ]);
   }),
 
-  // 8. Get integrations settings
   http.get('/api/settings/integrations', async () => {
     await delay(200);
     return HttpResponse.json({
@@ -275,7 +274,21 @@ export const mockMonitorHandlers = [
       twilio_to_number: "+0987654321",
       whatsapp_enabled: false,
       webhook_enabled: true,
-      webhook_url: "https://example.com/webhook"
+      webhook_url: "https://example.com/webhook",
+      slack_enabled: false,
+      slack_url: "",
+      discord_enabled: false,
+      discord_url: "",
+      smtp_enabled: false,
+      smtp_host: "",
+      smtp_port: 587,
+      smtp_username: "",
+      smtp_password: "",
+      smtp_from: "",
+      smtp_to: "",
+      webhook_method: "POST",
+      webhook_headers: "",
+      webhook_body_template: ""
     });
   }),
 
