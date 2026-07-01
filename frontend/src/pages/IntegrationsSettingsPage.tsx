@@ -1,47 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import useSWR from 'swr';
-import { apiClient } from '../lib/api-client';
 import { Button } from '../components/ui/Button';
 import { Toggle } from '../components/ui/Toggle';
 import { Input } from '../components/ui/Input';
-import { AlertCircle, CheckCircle, MessageSquare, Phone, Webhook, X } from 'lucide-react';
-import { z } from 'zod';
+import { AlertCircle, CheckCircle, MessageSquare, Phone, Webhook, X, Mail } from 'lucide-react';
+import { useIntegrations, IntegrationsSettingsSchema } from '../hooks/useIntegrations';
+import type { IntegrationsSettings } from '../hooks/useIntegrations';
 
-interface IntegrationsSettings {
-  whatsapp_token?: string;
-  whatsapp_phone_number_id?: string;
-  whatsapp_to_number?: string;
-  whatsapp_template_name?: string;
-  whatsapp_enabled: boolean;
-  twilio_account_sid?: string;
-  twilio_auth_token?: string;
-  twilio_from_number?: string;
-  twilio_to_number?: string;
-  twilio_callback_url?: string;
-  twilio_enabled: boolean;
-  webhook_url?: string;
-  webhook_enabled: boolean;
-}
-
-const IntegrationsSettingsSchema = z.object({
-  whatsapp_token: z.string().optional(),
-  whatsapp_phone_number_id: z.string().optional(),
-  whatsapp_to_number: z.string().optional(),
-  whatsapp_template_name: z.string().optional(),
-  whatsapp_enabled: z.boolean(),
-  twilio_account_sid: z.string().optional(),
-  twilio_auth_token: z.string().optional(),
-  twilio_from_number: z.string().optional(),
-  twilio_to_number: z.string().optional(),
-  twilio_callback_url: z.string().url().optional().or(z.literal('')),
-  twilio_enabled: z.boolean(),
-  webhook_url: z.string().url().optional().or(z.literal('')),
-  webhook_enabled: z.boolean(),
-});
-
-const fetcher = (url: string) => apiClient.get(url).then((res) => res.data);
-
-type IntegrationType = 'whatsapp' | 'twilio' | 'webhook';
+type IntegrationType = 'whatsapp' | 'twilio' | 'webhook' | 'slack' | 'discord' | 'smtp';
 
 interface IntegrationCardConfig {
   type: IntegrationType;
@@ -68,23 +33,44 @@ const INTEGRATION_CARDS: IntegrationCardConfig[] = [
   },
   {
     type: 'webhook',
-    title: 'Webhook',
-    description: 'Dispatch JSON event payloads via POST requests to external endpoints like Slack or Discord.',
+    title: 'Custom Webhook',
+    description: 'Dispatch custom JSON event payloads via HTTP requests to external endpoints.',
     icon: <Webhook size={28} />,
     color: 'var(--color-warning)',
+  },
+  {
+    type: 'slack',
+    title: 'Slack Webhook',
+    description: 'Post real-time status alerts directly into configured Slack channels.',
+    icon: <MessageSquare size={28} />,
+    color: '#36C5F0',
+  },
+  {
+    type: 'discord',
+    title: 'Discord Webhook',
+    description: 'Relay failure alerts to Discord channels using native Discord webhooks.',
+    icon: <MessageSquare size={28} />,
+    color: '#5865F2',
+  },
+  {
+    type: 'smtp',
+    title: 'SMTP Email',
+    description: 'Send direct alert notifications to administrator mailboxes using an SMTP relay.',
+    icon: <Mail size={28} />,
+    color: '#10B981',
   },
 ];
 
 export const IntegrationsSettingsPage: React.FC = () => {
-  const { data: settings, error, isLoading, mutate } = useSWR<IntegrationsSettings>(
-    '/api/settings/integrations',
-    fetcher
-  );
+  const { settings, error, isLoading, updateIntegrations, mutateSettings } = useIntegrations();
 
   const [formData, setFormData] = useState<IntegrationsSettings>({
     whatsapp_enabled: false,
     twilio_enabled: false,
     webhook_enabled: false,
+    slack_enabled: false,
+    discord_enabled: false,
+    smtp_enabled: false,
   });
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -102,7 +88,7 @@ export const IntegrationsSettingsPage: React.FC = () => {
     }
   }, [settings]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -134,6 +120,19 @@ export const IntegrationsSettingsPage: React.FC = () => {
     const payload = { ...formData };
     if (!payload.twilio_callback_url) payload.twilio_callback_url = '';
     if (!payload.webhook_url) payload.webhook_url = '';
+    if (!payload.slack_url) payload.slack_url = '';
+    if (!payload.discord_url) payload.discord_url = '';
+    if (!payload.smtp_host) payload.smtp_host = '';
+    if (payload.smtp_port === undefined || payload.smtp_port === null || (payload.smtp_port as any) === '') {
+      payload.smtp_port = 0;
+    }
+    if (!payload.smtp_username) payload.smtp_username = '';
+    if (!payload.smtp_password) payload.smtp_password = '';
+    if (!payload.smtp_from) payload.smtp_from = '';
+    if (!payload.smtp_to) payload.smtp_to = '';
+    if (!payload.webhook_method) payload.webhook_method = 'POST';
+    if (!payload.webhook_headers) payload.webhook_headers = '';
+    if (!payload.webhook_body_template) payload.webhook_body_template = '';
 
     const validation = IntegrationsSettingsSchema.safeParse(payload);
     if (!validation.success) {
@@ -148,11 +147,14 @@ export const IntegrationsSettingsPage: React.FC = () => {
       return;
     }
 
+    // Convert types back if needed
+    const validatedData = validation.data as IntegrationsSettings;
+
     try {
-      await apiClient.put('/api/settings/integrations', payload);
+      await updateIntegrations(validatedData);
       setSaveStatus('success');
       setSuccessMessage('Integrations settings updated successfully.');
-      mutate(payload, false);
+      mutateSettings(validatedData, false);
       setActiveModal(null);
       setTimeout(() => {
         setSaveStatus('idle');
@@ -679,6 +681,8 @@ export const IntegrationsSettingsPage: React.FC = () => {
               boxShadow: 'var(--shadow-modal)',
               display: 'flex',
               flexDirection: 'column',
+              maxHeight: '90vh',
+              overflowY: 'auto'
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -706,10 +710,10 @@ export const IntegrationsSettingsPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-bold)', margin: 0, color: 'var(--color-text-primary)' }}>
-                    Generic HTTP Webhook
+                    Custom HTTP Webhook
                   </h3>
                   <p style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)', margin: 0 }}>
-                    WEBHOOK API
+                    CUSTOM WEBHOOK
                   </p>
                 </div>
               </div>
@@ -735,17 +739,503 @@ export const IntegrationsSettingsPage: React.FC = () => {
                 name="webhook_url"
                 label="WEBHOOK ENDPOINT URL"
                 labelStyle={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}
-                placeholder="https://hooks.slack.com/services/..."
+                placeholder="https://example.com/alerts"
                 value={formData.webhook_url || ''}
                 onChange={handleInputChange}
                 error={formErrors.webhook_url}
               />
 
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
+                <label htmlFor="webhook_method" style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-text-secondary)', fontFamily: 'var(--font-mono)' }}>
+                  HTTP METHOD
+                </label>
+                <select
+                  id="webhook_method"
+                  name="webhook_method"
+                  value={formData.webhook_method || 'POST'}
+                  onChange={handleInputChange}
+                  style={{
+                    width: '100%',
+                    height: '40px',
+                    padding: '0 var(--space-md)',
+                    backgroundColor: 'var(--color-bg-base)',
+                    color: 'var(--color-text-primary)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-md)',
+                    outline: 'none',
+                  }}
+                >
+                  {['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'].map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
+                <label htmlFor="webhook_headers" style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-text-secondary)', fontFamily: 'var(--font-mono)' }}>
+                  CUSTOM HEADERS (JSON)
+                </label>
+                <textarea
+                  id="webhook_headers"
+                  name="webhook_headers"
+                  placeholder='{"Content-Type": "application/json"}'
+                  value={formData.webhook_headers || ''}
+                  onChange={handleInputChange}
+                  style={{
+                    width: '100%',
+                    height: '75px',
+                    padding: 'var(--space-sm) var(--space-md)',
+                    fontFamily: 'monospace',
+                    fontSize: 'var(--font-size-xs)',
+                    backgroundColor: 'var(--color-bg-base)',
+                    color: 'var(--color-text-primary)',
+                    border: `1px solid ${formErrors.webhook_headers ? 'var(--color-destructive)' : 'var(--color-border)'}`,
+                    borderRadius: 'var(--radius-md)',
+                    outline: 'none',
+                    resize: 'none'
+                  }}
+                />
+                {formErrors.webhook_headers && (
+                  <span role="alert" style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-destructive)' }}>
+                    {formErrors.webhook_headers}
+                  </span>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
+                <label htmlFor="webhook_body_template" style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-medium)', color: 'var(--color-text-secondary)', fontFamily: 'var(--font-mono)' }}>
+                  JSON BODY TEMPLATE
+                </label>
+                <textarea
+                  id="webhook_body_template"
+                  name="webhook_body_template"
+                  placeholder='{"status": "{status}", "url": "{monitorUrl}", "error": "{errorMessage}"}'
+                  value={formData.webhook_body_template || ''}
+                  onChange={handleInputChange}
+                  style={{
+                    width: '100%',
+                    height: '100px',
+                    padding: 'var(--space-sm) var(--space-md)',
+                    fontFamily: 'monospace',
+                    fontSize: 'var(--font-size-xs)',
+                    backgroundColor: 'var(--color-bg-base)',
+                    color: 'var(--color-text-primary)',
+                    border: `1px solid ${formErrors.webhook_body_template ? 'var(--color-destructive)' : 'var(--color-border)'}`,
+                    borderRadius: 'var(--radius-md)',
+                    outline: 'none',
+                    resize: 'none'
+                  }}
+                />
+                {formErrors.webhook_body_template && (
+                  <span role="alert" style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-destructive)' }}>
+                    {formErrors.webhook_body_template}
+                  </span>
+                )}
+                <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', padding: 'var(--space-xs) var(--space-sm)', backgroundColor: 'var(--color-bg-deep)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', lineHeight: '1.4' }}>
+                  <strong>Template Placeholders:</strong><br />
+                  • <code>{`{status}`}</code>: Monitor status (UP/DOWN)<br />
+                  • <code>{`{monitorUrl}`}</code>: Target URL tested<br />
+                  • <code>{`{monitorName}`}</code>: Target monitor name<br />
+                  • <code>{`{errorMessage}`}</code>: Error message details
+                </div>
+              </div>
+
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--color-border)' }}>
                 <Toggle
                   checked={formData.webhook_enabled}
                   onChange={() => handleToggleChange('webhook_enabled')}
-                  label="Enable Integration"
+                  label="Enable Custom Webhook"
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+                <Button variant="ghost" onClick={() => setActiveModal(null)} type="button">
+                  Cancel
+                </Button>
+                <Button variant="primary" type="submit" isLoading={saveStatus === 'saving'}>
+                  Save Settings
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Slack Modal */}
+      {activeModal === 'slack' && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1040,
+            padding: 'var(--space-md)',
+          }}
+          onClick={() => setActiveModal(null)}
+        >
+          <div
+            className="glass-effect"
+            style={{
+              width: '100%',
+              maxWidth: '560px',
+              backgroundColor: 'var(--color-bg-elevated)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--shadow-modal)',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: 'var(--space-lg) var(--space-xl)',
+              borderBottom: '1px solid var(--color-border)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: 'var(--radius-lg)',
+                  backgroundColor: 'var(--color-bg-deep)',
+                  border: '1px solid var(--color-border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#36C5F0',
+                }}>
+                  <MessageSquare size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-bold)', margin: 0, color: 'var(--color-text-primary)' }}>
+                    Slack Integration
+                  </h3>
+                  <p style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)', margin: 0 }}>
+                    SLACK WEBHOOK
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveModal(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--color-text-muted)',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSubmit} style={{ padding: 'var(--space-xl)', display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
+              <Input
+                id="slack_url"
+                name="slack_url"
+                label="SLACK WEBHOOK URL"
+                labelStyle={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}
+                placeholder="https://hooks.slack.com/services/..."
+                value={formData.slack_url || ''}
+                onChange={handleInputChange}
+                error={formErrors.slack_url}
+              />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--color-border)' }}>
+                <Toggle
+                  checked={formData.slack_enabled}
+                  onChange={() => handleToggleChange('slack_enabled')}
+                  label="Enable Slack Integration"
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+                <Button variant="ghost" onClick={() => setActiveModal(null)} type="button">
+                  Cancel
+                </Button>
+                <Button variant="primary" type="submit" isLoading={saveStatus === 'saving'}>
+                  Save Settings
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Discord Modal */}
+      {activeModal === 'discord' && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1040,
+            padding: 'var(--space-md)',
+          }}
+          onClick={() => setActiveModal(null)}
+        >
+          <div
+            className="glass-effect"
+            style={{
+              width: '100%',
+              maxWidth: '560px',
+              backgroundColor: 'var(--color-bg-elevated)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--shadow-modal)',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: 'var(--space-lg) var(--space-xl)',
+              borderBottom: '1px solid var(--color-border)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: 'var(--radius-lg)',
+                  backgroundColor: 'var(--color-bg-deep)',
+                  border: '1px solid var(--color-border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#5865F2',
+                }}>
+                  <MessageSquare size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-bold)', margin: 0, color: 'var(--color-text-primary)' }}>
+                    Discord Integration
+                  </h3>
+                  <p style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)', margin: 0 }}>
+                    DISCORD WEBHOOK
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveModal(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--color-text-muted)',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSubmit} style={{ padding: 'var(--space-xl)', display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
+              <Input
+                id="discord_url"
+                name="discord_url"
+                label="DISCORD WEBHOOK URL"
+                labelStyle={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}
+                placeholder="https://discord.com/api/webhooks/..."
+                value={formData.discord_url || ''}
+                onChange={handleInputChange}
+                error={formErrors.discord_url}
+              />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--color-border)' }}>
+                <Toggle
+                  checked={formData.discord_enabled}
+                  onChange={() => handleToggleChange('discord_enabled')}
+                  label="Enable Discord Integration"
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+                <Button variant="ghost" onClick={() => setActiveModal(null)} type="button">
+                  Cancel
+                </Button>
+                <Button variant="primary" type="submit" isLoading={saveStatus === 'saving'}>
+                  Save Settings
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* SMTP Modal */}
+      {activeModal === 'smtp' && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1040,
+            padding: 'var(--space-md)',
+          }}
+          onClick={() => setActiveModal(null)}
+        >
+          <div
+            className="glass-effect"
+            style={{
+              width: '100%',
+              maxWidth: '560px',
+              backgroundColor: 'var(--color-bg-elevated)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--shadow-modal)',
+              display: 'flex',
+              flexDirection: 'column',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: 'var(--space-lg) var(--space-xl)',
+              borderBottom: '1px solid var(--color-border)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: 'var(--radius-lg)',
+                  backgroundColor: 'var(--color-bg-deep)',
+                  border: '1px solid var(--color-border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#10B981',
+                }}>
+                  <Mail size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-bold)', margin: 0, color: 'var(--color-text-primary)' }}>
+                    SMTP Email Relay
+                  </h3>
+                  <p style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)', margin: 0 }}>
+                    SMTP NOTIFICATIONS
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveModal(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--color-text-muted)',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSubmit} style={{ padding: 'var(--space-xl)', display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: 'var(--space-md)' }}>
+                <Input
+                  id="smtp_host"
+                  name="smtp_host"
+                  label="SMTP HOST"
+                  labelStyle={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}
+                  placeholder="smtp.example.com"
+                  value={formData.smtp_host || ''}
+                  onChange={handleInputChange}
+                  error={formErrors.smtp_host}
+                />
+                <Input
+                  id="smtp_port"
+                  name="smtp_port"
+                  label="PORT"
+                  labelStyle={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}
+                  placeholder="587"
+                  type="number"
+                  value={formData.smtp_port || ''}
+                  onChange={handleInputChange}
+                  error={formErrors.smtp_port}
+                />
+              </div>
+
+              <Input
+                id="smtp_username"
+                name="smtp_username"
+                label="SMTP USERNAME"
+                labelStyle={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}
+                placeholder="user@example.com"
+                value={formData.smtp_username || ''}
+                onChange={handleInputChange}
+                error={formErrors.smtp_username}
+              />
+
+              <Input
+                id="smtp_password"
+                name="smtp_password"
+                label="SMTP PASSWORD"
+                labelStyle={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}
+                placeholder="••••••••"
+                type="password"
+                value={formData.smtp_password || ''}
+                onChange={handleInputChange}
+                error={formErrors.smtp_password}
+              />
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
+                <Input
+                  id="smtp_from"
+                  name="smtp_from"
+                  label="SENDER EMAIL"
+                  labelStyle={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}
+                  placeholder="alerts@example.com"
+                  value={formData.smtp_from || ''}
+                  onChange={handleInputChange}
+                  error={formErrors.smtp_from}
+                />
+                <Input
+                  id="smtp_to"
+                  name="smtp_to"
+                  label="RECIPIENT EMAIL"
+                  labelStyle={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}
+                  placeholder="admin@example.com"
+                  value={formData.smtp_to || ''}
+                  onChange={handleInputChange}
+                  error={formErrors.smtp_to}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--color-border)' }}>
+                <Toggle
+                  checked={formData.smtp_enabled}
+                  onChange={() => handleToggleChange('smtp_enabled')}
+                  label="Enable SMTP Integration"
                 />
               </div>
 

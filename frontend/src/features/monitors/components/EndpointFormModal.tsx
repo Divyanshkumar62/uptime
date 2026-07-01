@@ -28,6 +28,7 @@ const EndpointFormSchema = z.object({
   accepted_status_codes: z.string().regex(/^(\d+(-\d+)?)(,\s*\d+(-\d+)?)*$/, "Invalid accepted status codes format. Use e.g. 200,201 or 200-299"),
   ignore_tls_errors: z.boolean(),
   tags: z.array(z.string()),
+  throttle_seconds: z.number().int().min(0, "Throttle seconds must be a positive integer").default(900),
 }).superRefine((data, ctx) => {
   if (['POST', 'PUT', 'PATCH'].includes(data.http_method) && data.request_body) {
     try {
@@ -76,6 +77,7 @@ export const EndpointFormModal: React.FC<EndpointFormModalProps> = ({ isOpen, on
   const [ignoreTlsErrors, setIgnoreTlsErrors] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
+  const [throttleSeconds, setThrottleSeconds] = useState(900);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -99,6 +101,7 @@ export const EndpointFormModal: React.FC<EndpointFormModalProps> = ({ isOpen, on
       setAcceptedStatusCodes(endpoint.accepted_status_codes || '200-299');
       setIgnoreTlsErrors(endpoint.ignore_tls_errors || false);
       setTags(endpoint.tags || []);
+      setThrottleSeconds(endpoint.throttle_seconds !== undefined ? endpoint.throttle_seconds : 900);
     } else {
       // Clear form on create
       setUrl('');
@@ -113,6 +116,7 @@ export const EndpointFormModal: React.FC<EndpointFormModalProps> = ({ isOpen, on
       setAcceptedStatusCodes('200-299');
       setIgnoreTlsErrors(false);
       setTags([]);
+      setThrottleSeconds(900);
     }
     setErrors({});
   }, [endpoint, isOpen]);
@@ -132,6 +136,7 @@ export const EndpointFormModal: React.FC<EndpointFormModalProps> = ({ isOpen, on
       accepted_status_codes: acceptedStatusCodes,
       ignore_tls_errors: ignoreTlsErrors,
       tags,
+      throttle_seconds: throttleSeconds,
     };
 
     const result = EndpointFormSchema.safeParse(formData);
@@ -146,6 +151,7 @@ export const EndpointFormModal: React.FC<EndpointFormModalProps> = ({ isOpen, on
         else if (path === 'jitter_ratio') fieldName = 'jitter';
         else if (path === 'accepted_status_codes') fieldName = 'acceptedStatusCodes';
         else if (path === 'request_body') fieldName = 'requestBody';
+        else if (path === 'throttle_seconds') fieldName = 'throttleSeconds';
 
         newErrors[fieldName] = issue.message;
       });
@@ -181,6 +187,7 @@ export const EndpointFormModal: React.FC<EndpointFormModalProps> = ({ isOpen, on
           accepted_status_codes: acceptedStatusCodes,
           ignore_tls_errors: ignoreTlsErrors,
           tags,
+          throttle_seconds: throttleSeconds,
         };
         await updateEndpoint(endpoint.id, dto);
       } else {
@@ -198,6 +205,7 @@ export const EndpointFormModal: React.FC<EndpointFormModalProps> = ({ isOpen, on
           accepted_status_codes: acceptedStatusCodes,
           ignore_tls_errors: ignoreTlsErrors,
           tags,
+          throttle_seconds: throttleSeconds,
         };
         await createEndpoint(dto);
       }
@@ -482,6 +490,19 @@ export const EndpointFormModal: React.FC<EndpointFormModalProps> = ({ isOpen, on
                 </div>
               </div>
             </div>
+
+            {/* Alert Cooldown */}
+            <Input
+              id="endpoint-throttle"
+              label="Alert Cooldown (Seconds)"
+              type="number"
+              value={throttleSeconds}
+              onChange={(e) => setThrottleSeconds(Number(e.target.value))}
+              error={errors.throttleSeconds}
+              min={0}
+              required
+              helperText="Cooldown threshold before dispatching another alert (default 900)"
+            />
 
             {/* Response JSON key validations */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
