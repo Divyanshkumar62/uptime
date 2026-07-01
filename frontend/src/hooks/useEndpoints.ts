@@ -22,6 +22,7 @@ export interface Endpoint {
   accepted_status_codes: string;
   ignore_tls_errors: boolean;
   tags: string[];
+  throttle_seconds: number;
 }
 
 export interface CreateEndpointDto {
@@ -38,6 +39,7 @@ export interface CreateEndpointDto {
   accepted_status_codes?: string;
   ignore_tls_errors?: boolean;
   tags?: string[];
+  throttle_seconds?: number;
 }
 
 export interface UpdateEndpointDto {
@@ -55,6 +57,7 @@ export interface UpdateEndpointDto {
   accepted_status_codes?: string;
   ignore_tls_errors?: boolean;
   tags?: string[];
+  throttle_seconds?: number;
 }
 
 const fetcher = (url: string) => apiClient.get(url).then((res) => res.data);
@@ -140,6 +143,7 @@ export const useEndpoints = () => {
         accepted_status_codes: endpointToUpdate.accepted_status_codes,
         ignore_tls_errors: endpointToUpdate.ignore_tls_errors,
         tags: endpointToUpdate.tags,
+        throttle_seconds: endpointToUpdate.throttle_seconds,
       };
 
       await apiClient.put(`/api/endpoints/${id}`, dto);
