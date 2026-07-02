@@ -23,6 +23,13 @@ export interface Endpoint {
   ignore_tls_errors: boolean;
   tags: string[];
   throttle_seconds: number;
+  monitor_type: 'HTTP' | 'TCP' | 'DNS' | 'POSTGRES' | 'MYSQL' | 'REDIS' | 'DOCKER';
+  port: number | null;
+  dns_record_type: string | null;
+  dns_resolve_server: string | null;
+  dns_expected_result: string | null;
+  db_connection_string: string | null;
+  docker_container_id: string | null;
 }
 
 export interface CreateEndpointDto {
@@ -40,6 +47,13 @@ export interface CreateEndpointDto {
   ignore_tls_errors?: boolean;
   tags?: string[];
   throttle_seconds?: number;
+  monitor_type?: 'HTTP' | 'TCP' | 'DNS' | 'POSTGRES' | 'MYSQL' | 'REDIS' | 'DOCKER';
+  port?: number | null;
+  dns_record_type?: string | null;
+  dns_resolve_server?: string | null;
+  dns_expected_result?: string | null;
+  db_connection_string?: string | null;
+  docker_container_id?: string | null;
 }
 
 export interface UpdateEndpointDto {
@@ -58,6 +72,13 @@ export interface UpdateEndpointDto {
   ignore_tls_errors?: boolean;
   tags?: string[];
   throttle_seconds?: number;
+  monitor_type?: 'HTTP' | 'TCP' | 'DNS' | 'POSTGRES' | 'MYSQL' | 'REDIS' | 'DOCKER';
+  port?: number | null;
+  dns_record_type?: string | null;
+  dns_resolve_server?: string | null;
+  dns_expected_result?: string | null;
+  db_connection_string?: string | null;
+  docker_container_id?: string | null;
 }
 
 const fetcher = (url: string) => apiClient.get(url).then((res) => res.data);
@@ -144,6 +165,13 @@ export const useEndpoints = () => {
         ignore_tls_errors: endpointToUpdate.ignore_tls_errors,
         tags: endpointToUpdate.tags,
         throttle_seconds: endpointToUpdate.throttle_seconds,
+        monitor_type: endpointToUpdate.monitor_type,
+        port: endpointToUpdate.port,
+        dns_record_type: endpointToUpdate.dns_record_type,
+        dns_resolve_server: endpointToUpdate.dns_resolve_server,
+        dns_expected_result: endpointToUpdate.dns_expected_result,
+        db_connection_string: endpointToUpdate.db_connection_string,
+        docker_container_id: endpointToUpdate.docker_container_id,
       };
 
       await apiClient.put(`/api/endpoints/${id}`, dto);
