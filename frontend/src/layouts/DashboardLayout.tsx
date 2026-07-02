@@ -4,7 +4,7 @@ import { useAuthStore } from '../stores/useAuthStore';
 import { useSSEStore } from '../stores/useSSEStore';
 import { LogOut, Activity, Moon, Sun, Monitor, Settings, Search, AlertTriangle } from 'lucide-react';
 import { Badge } from '../components/ui/Badge';
-import { StatusFooter } from '../components/StatusFooter';
+// import { StatusFooter } from '../components/StatusFooter';
 import { useSearchStore } from '../stores/useSearchStore';
 
 export const DashboardLayout: React.FC = () => {
@@ -18,21 +18,12 @@ export const DashboardLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Theme management: 'dark' | 'light'
+  // Theme management: dark/light toggle
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('uptime_theme');
     if (saved === 'dark' || saved === 'light') return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return 'dark';
   });
-
-  useEffect(() => {
-    // Connect SSE on mount / login
-    connectSSE();
-    return () => {
-      // Clean up SSE connection on unmount
-      disconnectSSE();
-    };
-  }, [connectSSE, disconnectSSE]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -43,6 +34,15 @@ export const DashboardLayout: React.FC = () => {
     }
     localStorage.setItem('uptime_theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    // Connect SSE on mount / login
+    connectSSE();
+    return () => {
+      // Clean up SSE connection on unmount
+      disconnectSSE();
+    };
+  }, [connectSSE, disconnectSSE]);
 
   const handleLogout = () => {
     logout();
@@ -110,13 +110,6 @@ export const DashboardLayout: React.FC = () => {
               letterSpacing: '-0.01em',
               lineHeight: '1.2'
             }}>Uptime</h1>
-            {/* <span style={{
-              fontSize: '10px',
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--color-text-muted)',
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase'
-            }}>Emerald Ops</span> */}
           </div>
         </div>
 
@@ -184,7 +177,7 @@ export const DashboardLayout: React.FC = () => {
           </Link>
         </nav>
 
-        {/* Footer controls: theme toggle, logout */}
+        {/* Footer controls */}
         <div style={{ 
           display: 'flex', 
           flexDirection: 'column', 
@@ -192,7 +185,7 @@ export const DashboardLayout: React.FC = () => {
           paddingTop: 'var(--space-lg)', 
           borderTop: '1px solid var(--color-border)' 
         }}>
-          {/* Theme switch */}
+          {/* Theme toggle */}
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="custom-btn"
@@ -308,8 +301,6 @@ export const DashboardLayout: React.FC = () => {
         <div style={{ flexGrow: 1 }} className="content-viewport">
           <Outlet />
         </div>
-        
-        <StatusFooter />
       </main>
     </div>
   );

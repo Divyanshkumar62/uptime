@@ -21,7 +21,14 @@ let mockEndpoints = [
     request_body: null,
     accepted_status_codes: "200-299",
     ignore_tls_errors: false,
-    tags: ["api", "github"]
+    tags: ["api", "github"],
+    monitor_type: "HTTP" as const,
+    port: null,
+    dns_record_type: null,
+    dns_resolve_server: null,
+    dns_expected_result: null,
+    db_connection_string: null,
+    docker_container_id: null
   },
   {
     id: 2,
@@ -42,7 +49,14 @@ let mockEndpoints = [
     request_body: null,
     accepted_status_codes: "200-299",
     ignore_tls_errors: false,
-    tags: ["production", "unstable"]
+    tags: ["production", "unstable"],
+    monitor_type: "HTTP" as const,
+    port: null,
+    dns_record_type: null,
+    dns_resolve_server: null,
+    dns_expected_result: null,
+    db_connection_string: null,
+    docker_container_id: null
   },
   {
     id: 3,
@@ -63,7 +77,14 @@ let mockEndpoints = [
     request_body: null,
     accepted_status_codes: "200-299",
     ignore_tls_errors: false,
-    tags: ["test"]
+    tags: ["test"],
+    monitor_type: "HTTP" as const,
+    port: null,
+    dns_record_type: null,
+    dns_resolve_server: null,
+    dns_expected_result: null,
+    db_connection_string: null,
+    docker_container_id: null
   }
 ];
 
@@ -127,14 +148,16 @@ export const mockMonitorHandlers = [
     await delay(200);
 
     // Simple validation simulator
-    if (!body.url.startsWith('http://') && !body.url.startsWith('https://')) {
-      return new HttpResponse("URL must start with http:// or https://", { status: 400 });
-    }
-    
-    try {
-      if (body.headers) JSON.parse(body.headers);
-    } catch {
-      return new HttpResponse("Headers must be a valid JSON representation", { status: 400 });
+    const monitorType = body.monitor_type || 'HTTP';
+    if (monitorType === 'HTTP') {
+      if (!body.url.startsWith('http://') && !body.url.startsWith('https://')) {
+        return new HttpResponse("URL must start with http:// or https://", { status: 400 });
+      }
+      try {
+        if (body.headers) JSON.parse(body.headers);
+      } catch {
+        return new HttpResponse("Headers must be a valid JSON representation", { status: 400 });
+      }
     }
 
     const newEndpoint = {
@@ -156,7 +179,14 @@ export const mockMonitorHandlers = [
       request_body: body.request_body || null,
       accepted_status_codes: body.accepted_status_codes || "200-299",
       ignore_tls_errors: body.ignore_tls_errors || false,
-      tags: body.tags || []
+      tags: body.tags || [],
+      monitor_type: monitorType,
+      port: body.port !== undefined ? body.port : null,
+      dns_record_type: body.dns_record_type !== undefined ? body.dns_record_type : null,
+      dns_resolve_server: body.dns_resolve_server !== undefined ? body.dns_resolve_server : null,
+      dns_expected_result: body.dns_expected_result !== undefined ? body.dns_expected_result : null,
+      db_connection_string: body.db_connection_string !== undefined ? body.db_connection_string : null,
+      docker_container_id: body.docker_container_id !== undefined ? body.docker_container_id : null
     };
 
     mockEndpoints.push(newEndpoint);
@@ -186,8 +216,11 @@ export const mockMonitorHandlers = [
     }
 
     // Validation
-    if (!body.url.startsWith('http://') && !body.url.startsWith('https://')) {
-      return new HttpResponse("URL must start with http:// or https://", { status: 400 });
+    const monitorType = body.monitor_type || mockEndpoints[index].monitor_type || 'HTTP';
+    if (monitorType === 'HTTP') {
+      if (!body.url.startsWith('http://') && !body.url.startsWith('https://')) {
+        return new HttpResponse("URL must start with http:// or https://", { status: 400 });
+      }
     }
 
     const updated = {
@@ -206,7 +239,14 @@ export const mockMonitorHandlers = [
       request_body: body.request_body !== undefined ? body.request_body : mockEndpoints[index].request_body || null,
       accepted_status_codes: body.accepted_status_codes || mockEndpoints[index].accepted_status_codes || "200-299",
       ignore_tls_errors: body.ignore_tls_errors !== undefined ? body.ignore_tls_errors : mockEndpoints[index].ignore_tls_errors || false,
-      tags: body.tags || mockEndpoints[index].tags || []
+      tags: body.tags || mockEndpoints[index].tags || [],
+      monitor_type: monitorType,
+      port: body.port !== undefined ? body.port : mockEndpoints[index].port,
+      dns_record_type: body.dns_record_type !== undefined ? body.dns_record_type : mockEndpoints[index].dns_record_type,
+      dns_resolve_server: body.dns_resolve_server !== undefined ? body.dns_resolve_server : mockEndpoints[index].dns_resolve_server,
+      dns_expected_result: body.dns_expected_result !== undefined ? body.dns_expected_result : mockEndpoints[index].dns_expected_result,
+      db_connection_string: body.db_connection_string !== undefined ? body.db_connection_string : mockEndpoints[index].db_connection_string,
+      docker_container_id: body.docker_container_id !== undefined ? body.docker_container_id : mockEndpoints[index].docker_container_id
     };
 
     mockEndpoints[index] = updated;
@@ -306,5 +346,6 @@ export const mockMonitorHandlers = [
         'Content-Type': 'text/event-stream',
       },
     });
-  })
+  }),
+
 ];
