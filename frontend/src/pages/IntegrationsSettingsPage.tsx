@@ -201,7 +201,7 @@ export const IntegrationsSettingsPage: React.FC = () => {
   }
 
   return (
-    <div style={{ maxWidth: '900px', display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)' }}>
+    <div style={{ maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)' }}>
       {/* Header */}
       <div>
         <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-bold)' }}>
@@ -254,8 +254,8 @@ export const IntegrationsSettingsPage: React.FC = () => {
       {/* Integration Cards Grid */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-        gap: 'var(--space-lg)',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: 'var(--space-xl)',
       }}>
         {INTEGRATION_CARDS.map((card) => {
           const isEnabled = formData[`${card.type}_enabled` as keyof IntegrationsSettings] as boolean;
