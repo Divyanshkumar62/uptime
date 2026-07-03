@@ -1,7 +1,24 @@
+use axum::Json;
 use axum::async_trait;
 use axum::extract::FromRequestParts;
 use axum::http::StatusCode;
 use axum::http::request::Parts;
+use axum::response::{IntoResponse, Response};
+
+pub struct AuthError(&'static str);
+
+impl IntoResponse for AuthError {
+    fn into_response(self) -> Response {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({
+                "error": "Unauthorized",
+                "message": self.0
+            })),
+        )
+            .into_response()
+    }
+}
 
 pub struct ApiKeyAuth;
 
@@ -10,11 +27,11 @@ impl<S> FromRequestParts<S> for ApiKeyAuth
 where
     S: Send + Sync,
 {
-    type Rejection = (StatusCode, &'static str);
+    type Rejection = AuthError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         let expected_key =
-            std::env::var("ADMIN_API_KEY").unwrap_or_else(|_| "admin-key".to_string());
+            std::env::var("ADMIN_API_KEY").expect("Missing ADMIN_API_KEY environment variable");
 
         let api_key = parts
             .headers
@@ -32,9 +49,8 @@ where
             return Ok(ApiKeyAuth);
         }
 
-        Err((
-            StatusCode::UNAUTHORIZED,
-            "Unauthorized: Invalid or missing API Key",
+        Err(AuthError(
+            "Missing, invalid, or expired session credentials.",
         ))
     }
 }
@@ -46,11 +62,11 @@ impl<S> FromRequestParts<S> for SessionCookieAuth
 where
     S: Send + Sync,
 {
-    type Rejection = (StatusCode, &'static str);
+    type Rejection = AuthError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         let expected_key =
-            std::env::var("ADMIN_API_KEY").unwrap_or_else(|_| "admin-key".to_string());
+            std::env::var("ADMIN_API_KEY").expect("Missing ADMIN_API_KEY environment variable");
 
         let cookie_header = parts.headers.get("Cookie").and_then(|v| v.to_str().ok());
 
@@ -63,9 +79,8 @@ where
             }
         }
 
-        Err((
-            StatusCode::UNAUTHORIZED,
-            "Unauthorized: Invalid or missing Session Cookie",
+        Err(AuthError(
+            "Missing, invalid, or expired session credentials.",
         ))
     }
 }
