@@ -86,6 +86,18 @@ mod tests {
             3,
             0.20,
             None,
+            "GET",
+            None,
+            "200-299",
+            false,
+            900,
+            "HTTP",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
         )
         .await
         .unwrap();

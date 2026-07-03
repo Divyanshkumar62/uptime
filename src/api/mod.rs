@@ -31,6 +31,12 @@ pub async fn start_api_server(state: AppState, addr: SocketAddr) {
             "/api/endpoints/:id/latency",
             get(routes::get_latency_handler),
         )
+        .route("/api/incidents", get(routes::get_incidents_handler))
+        .route(
+            "/api/settings/integrations",
+            get(routes::get_integrations_settings_handler)
+                .put(routes::update_integrations_settings_handler),
+        )
         .route("/api/events", get(sse::sse_handler))
         .route(
             "/api/alerts/twilio-twiml",

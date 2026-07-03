@@ -52,6 +52,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     println!("Database cleanup background worker task spawned.");
 
+    // Initialize and run SSL Expiry Worker (runs daily, checks expiration)
+    let pool_ssl = pool.clone();
+    let tx_ssl = tx.clone();
+    let ssl_cancel = tokio_util::sync::CancellationToken::new();
+    tokio::spawn(async move {
+        polling::ssl::start_ssl_expiry_worker(
+            pool_ssl,
+            std::time::Duration::from_secs(24 * 3600),
+            ssl_cancel,
+            Some(tx_ssl),
+        )
+        .await;
+    });
+    println!("SSL certificate expiry background worker task spawned.");
+
     // Start Axum API and SSE server
     let app_state = api::AppState {
         pool: pool.clone(),

@@ -14,6 +14,7 @@ pub struct StatusEvent {
     pub new_status: String,
     pub consecutive_failures: i32,
     pub alerted_at: chrono::DateTime<chrono::Utc>,
+    pub error_message: Option<String>,
 }
 
 pub async fn sse_handler(

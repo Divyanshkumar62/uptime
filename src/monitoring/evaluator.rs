@@ -6,6 +6,7 @@ pub async fn evaluate_probe_result(
     pool: &DbPool,
     endpoint: &Endpoint,
     is_probe_success: bool,
+    error_message: Option<String>,
     broadcast_tx: Option<&tokio::sync::broadcast::Sender<crate::api::sse::StatusEvent>>,
 ) -> Result<(), sqlx::Error> {
     let prev_status = &endpoint.status;
@@ -50,6 +51,7 @@ pub async fn evaluate_probe_result(
                 new_status: new_status.clone(),
                 consecutive_failures: new_failures,
                 alerted_at: log.alerted_at,
+                error_message: error_message.clone(),
             };
             let _ = tx.send(event);
         }
@@ -77,12 +79,24 @@ mod tests {
             3,
             0.20,
             None,
+            "GET",
+            None,
+            "200-299",
+            false,
+            900,
+            "HTTP",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
         )
         .await
         .unwrap();
 
         // 1. Success check: status remains UP, consecutive failures stays 0
-        evaluate_probe_result(&pool, &endpoint, true, None)
+        evaluate_probe_result(&pool, &endpoint, true, None, None)
             .await
             .unwrap();
         let ep = get_endpoint(&pool, endpoint.id).await.unwrap().unwrap();
@@ -103,12 +117,24 @@ mod tests {
             3,
             0.20,
             None,
+            "GET",
+            None,
+            "200-299",
+            false,
+            900,
+            "HTTP",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
         )
         .await
         .unwrap();
 
         // 1. First failure: stays UP (BR-001 alert suppression)
-        evaluate_probe_result(&pool, &endpoint, false, None)
+        evaluate_probe_result(&pool, &endpoint, false, None, None)
             .await
             .unwrap();
         let ep1 = get_endpoint(&pool, endpoint.id).await.unwrap().unwrap();
@@ -116,7 +142,7 @@ mod tests {
         assert_eq!(ep1.consecutive_failures, 1);
 
         // 2. Second failure: stays UP
-        evaluate_probe_result(&pool, &ep1, false, None)
+        evaluate_probe_result(&pool, &ep1, false, None, None)
             .await
             .unwrap();
         let ep2 = get_endpoint(&pool, endpoint.id).await.unwrap().unwrap();
@@ -124,7 +150,7 @@ mod tests {
         assert_eq!(ep2.consecutive_failures, 2);
 
         // 3. Third failure: transitions to DOWN
-        evaluate_probe_result(&pool, &ep2, false, None)
+        evaluate_probe_result(&pool, &ep2, false, None, None)
             .await
             .unwrap();
         let ep3 = get_endpoint(&pool, endpoint.id).await.unwrap().unwrap();
@@ -132,7 +158,7 @@ mod tests {
         assert_eq!(ep3.consecutive_failures, 3);
 
         // 4. Success recovery: resets failures to 0 immediately (BR-002) and transitions back to UP
-        evaluate_probe_result(&pool, &ep3, true, None)
+        evaluate_probe_result(&pool, &ep3, true, None, None)
             .await
             .unwrap();
         let ep4 = get_endpoint(&pool, endpoint.id).await.unwrap().unwrap();

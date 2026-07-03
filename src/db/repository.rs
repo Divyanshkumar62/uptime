@@ -14,14 +14,30 @@ pub async fn create_endpoint(
     consecutive_failure_threshold: i32,
     jitter_ratio: f64,
     json_validation_keys: Option<&str>,
+    http_method: &str,
+    request_body: Option<&str>,
+    accepted_status_codes: &str,
+    ignore_tls_errors: bool,
+    throttle_seconds: i32,
+    monitor_type: &str,
+    port: Option<i32>,
+    dns_record_type: Option<&str>,
+    dns_resolve_server: Option<&str>,
+    dns_expected_result: Option<&str>,
+    db_connection_string: Option<&str>,
+    docker_container_id: Option<&str>,
 ) -> Result<Endpoint, Error> {
     let now = Utc::now();
     let row_id = sqlx::query(
         "INSERT INTO endpoints (
             url, headers, interval_seconds, timeout_seconds, retry_interval_seconds,
             consecutive_failure_threshold, jitter_ratio, json_validation_keys,
-            status, consecutive_failures, is_active, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'UP', 0, 1, ?, ?)",
+            status, consecutive_failures, is_active, http_method, request_body,
+            accepted_status_codes, ignore_tls_errors, throttle_seconds,
+            monitor_type, port, dns_record_type, dns_resolve_server, dns_expected_result,
+            db_connection_string, docker_container_id,
+            created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'UP', 0, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(url)
     .bind(headers)
@@ -31,6 +47,18 @@ pub async fn create_endpoint(
     .bind(consecutive_failure_threshold)
     .bind(jitter_ratio)
     .bind(json_validation_keys)
+    .bind(http_method)
+    .bind(request_body)
+    .bind(accepted_status_codes)
+    .bind(ignore_tls_errors)
+    .bind(throttle_seconds)
+    .bind(monitor_type)
+    .bind(port)
+    .bind(dns_record_type)
+    .bind(dns_resolve_server)
+    .bind(dns_expected_result)
+    .bind(db_connection_string)
+    .bind(docker_container_id)
     .bind(now)
     .bind(now)
     .execute(pool)
@@ -171,13 +199,30 @@ pub async fn update_endpoint(
     jitter_ratio: f64,
     json_validation_keys: Option<&str>,
     is_active: bool,
+    http_method: &str,
+    request_body: Option<&str>,
+    accepted_status_codes: &str,
+    ignore_tls_errors: bool,
+    throttle_seconds: i32,
+    monitor_type: &str,
+    port: Option<i32>,
+    dns_record_type: Option<&str>,
+    dns_resolve_server: Option<&str>,
+    dns_expected_result: Option<&str>,
+    db_connection_string: Option<&str>,
+    docker_container_id: Option<&str>,
 ) -> Result<Endpoint, Error> {
     let now = chrono::Utc::now();
     sqlx::query(
         "UPDATE endpoints 
          SET url = ?, headers = ?, interval_seconds = ?, timeout_seconds = ?, 
              retry_interval_seconds = ?, consecutive_failure_threshold = ?, 
-             jitter_ratio = ?, json_validation_keys = ?, is_active = ?, updated_at = ? 
+             jitter_ratio = ?, json_validation_keys = ?, is_active = ?, 
+             http_method = ?, request_body = ?, accepted_status_codes = ?, 
+             ignore_tls_errors = ?, throttle_seconds = ?, monitor_type = ?,
+             port = ?, dns_record_type = ?, dns_resolve_server = ?,
+             dns_expected_result = ?, db_connection_string = ?, docker_container_id = ?,
+             updated_at = ? 
          WHERE id = ?",
     )
     .bind(url)
@@ -189,6 +234,18 @@ pub async fn update_endpoint(
     .bind(jitter_ratio)
     .bind(json_validation_keys)
     .bind(is_active)
+    .bind(http_method)
+    .bind(request_body)
+    .bind(accepted_status_codes)
+    .bind(ignore_tls_errors)
+    .bind(throttle_seconds)
+    .bind(monitor_type)
+    .bind(port)
+    .bind(dns_record_type)
+    .bind(dns_resolve_server)
+    .bind(dns_expected_result)
+    .bind(db_connection_string)
+    .bind(docker_container_id)
     .bind(now)
     .bind(id)
     .execute(pool)
@@ -226,6 +283,168 @@ pub async fn get_ping_metrics(
     .await
 }
 
+pub async fn get_integrations_settings(
+    pool: &DbPool,
+) -> Result<crate::db::models::IntegrationsSettings, Error> {
+    sqlx::query_as::<_, crate::db::models::IntegrationsSettings>(
+        "SELECT * FROM integrations_settings WHERE id = 1",
+    )
+    .fetch_one(pool)
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn update_integrations_settings(
+    pool: &DbPool,
+    whatsapp_token: Option<&str>,
+    whatsapp_phone_number_id: Option<&str>,
+    whatsapp_to_number: Option<&str>,
+    whatsapp_template_name: Option<&str>,
+    whatsapp_enabled: bool,
+    twilio_account_sid: Option<&str>,
+    twilio_auth_token: Option<&str>,
+    twilio_from_number: Option<&str>,
+    twilio_to_number: Option<&str>,
+    twilio_callback_url: Option<&str>,
+    twilio_enabled: bool,
+    webhook_url: Option<&str>,
+    webhook_enabled: bool,
+    slack_url: Option<&str>,
+    slack_enabled: bool,
+    discord_url: Option<&str>,
+    discord_enabled: bool,
+    smtp_host: Option<&str>,
+    smtp_port: Option<i32>,
+    smtp_username: Option<&str>,
+    smtp_password: Option<&str>,
+    smtp_from: Option<&str>,
+    smtp_to: Option<&str>,
+    smtp_enabled: bool,
+    webhook_method: &str,
+    webhook_headers: Option<&str>,
+    webhook_body_template: Option<&str>,
+) -> Result<crate::db::models::IntegrationsSettings, Error> {
+    let now = chrono::Utc::now();
+    sqlx::query(
+        "UPDATE integrations_settings 
+         SET whatsapp_token = ?, whatsapp_phone_number_id = ?, whatsapp_to_number = ?, 
+             whatsapp_template_name = ?, whatsapp_enabled = ?, twilio_account_sid = ?, 
+             twilio_auth_token = ?, twilio_from_number = ?, twilio_to_number = ?, 
+             twilio_callback_url = ?, twilio_enabled = ?, webhook_url = ?, 
+             webhook_enabled = ?, slack_url = ?, slack_enabled = ?, 
+             discord_url = ?, discord_enabled = ?, smtp_host = ?, 
+             smtp_port = ?, smtp_username = ?, smtp_password = ?, 
+             smtp_from = ?, smtp_to = ?, smtp_enabled = ?, 
+             webhook_method = ?, webhook_headers = ?, webhook_body_template = ?,
+             updated_at = ? 
+         WHERE id = 1",
+    )
+    .bind(whatsapp_token)
+    .bind(whatsapp_phone_number_id)
+    .bind(whatsapp_to_number)
+    .bind(whatsapp_template_name)
+    .bind(whatsapp_enabled)
+    .bind(twilio_account_sid)
+    .bind(twilio_auth_token)
+    .bind(twilio_from_number)
+    .bind(twilio_to_number)
+    .bind(twilio_callback_url)
+    .bind(twilio_enabled)
+    .bind(webhook_url)
+    .bind(webhook_enabled)
+    .bind(slack_url)
+    .bind(slack_enabled)
+    .bind(discord_url)
+    .bind(discord_enabled)
+    .bind(smtp_host)
+    .bind(smtp_port)
+    .bind(smtp_username)
+    .bind(smtp_password)
+    .bind(smtp_from)
+    .bind(smtp_to)
+    .bind(smtp_enabled)
+    .bind(webhook_method)
+    .bind(webhook_headers)
+    .bind(webhook_body_template)
+    .bind(now)
+    .execute(pool)
+    .await?;
+
+    get_integrations_settings(pool).await
+}
+
+pub async fn get_recent_incidents(pool: &DbPool, limit: i64) -> Result<Vec<PingMetric>, Error> {
+    sqlx::query_as::<_, PingMetric>(
+        "SELECT * FROM ping_metrics 
+         WHERE is_success = 0 
+         ORDER BY checked_at DESC 
+         LIMIT ?",
+    )
+    .bind(limit)
+    .fetch_all(pool)
+    .await
+}
+
+pub async fn set_endpoint_tags(
+    pool: &DbPool,
+    endpoint_id: i64,
+    tags: &[String],
+) -> Result<(), Error> {
+    sqlx::query("DELETE FROM endpoint_tags WHERE endpoint_id = ?")
+        .bind(endpoint_id)
+        .execute(pool)
+        .await?;
+
+    for tag in tags {
+        sqlx::query("INSERT INTO endpoint_tags (endpoint_id, tag) VALUES (?, ?)")
+            .bind(endpoint_id)
+            .bind(tag)
+            .execute(pool)
+            .await?;
+    }
+    Ok(())
+}
+
+pub async fn get_endpoint_tags(pool: &DbPool, endpoint_id: i64) -> Result<Vec<String>, Error> {
+    let rows =
+        sqlx::query_as::<_, (String,)>("SELECT tag FROM endpoint_tags WHERE endpoint_id = ?")
+            .bind(endpoint_id)
+            .fetch_all(pool)
+            .await?;
+    Ok(rows.into_iter().map(|r| r.0).collect())
+}
+
+pub async fn list_endpoints(pool: &DbPool, tag: Option<&str>) -> Result<Vec<Endpoint>, Error> {
+    if let Some(t) = tag {
+        sqlx::query_as::<_, Endpoint>(
+            "SELECT e.* FROM endpoints e 
+             JOIN endpoint_tags t ON e.id = t.endpoint_id 
+             WHERE t.tag = ?",
+        )
+        .bind(t)
+        .fetch_all(pool)
+        .await
+    } else {
+        sqlx::query_as::<_, Endpoint>("SELECT * FROM endpoints")
+            .fetch_all(pool)
+            .await
+    }
+}
+
+pub async fn update_ssl_expiry(
+    pool: &DbPool,
+    id: i64,
+    expiry: Option<chrono::DateTime<chrono::Utc>>,
+) -> Result<(), Error> {
+    sqlx::query("UPDATE endpoints SET ssl_expires_at = ?, updated_at = ? WHERE id = ?")
+        .bind(expiry)
+        .bind(chrono::Utc::now())
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -246,6 +465,18 @@ mod tests {
             15,
             3,
             0.20,
+            None,
+            "GET",
+            None,
+            "200-299",
+            false,
+            900,
+            "HTTP",
+            None,
+            None,
+            None,
+            None,
+            None,
             None,
         )
         .await

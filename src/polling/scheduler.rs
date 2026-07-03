@@ -8,6 +8,7 @@ use tokio_util::sync::CancellationToken;
 pub struct PollingScheduler {
     pool: DbPool,
     client: reqwest::Client,
+    insecure_client: reqwest::Client,
     semaphore: Arc<Semaphore>,
     cancel_token: CancellationToken,
     active_tasks: HashMap<i64, JoinHandle<()>>,
@@ -24,9 +25,16 @@ impl PollingScheduler {
             .build()
             .unwrap_or_default();
 
+        let insecure_client = reqwest::Client::builder()
+            .pool_max_idle_per_host(10)
+            .danger_accept_invalid_certs(true)
+            .build()
+            .unwrap_or_default();
+
         Self {
             pool,
             client,
+            insecure_client,
             semaphore: Arc::new(Semaphore::new(50)),
             cancel_token: CancellationToken::new(),
             active_tasks: HashMap::new(),
@@ -45,13 +53,22 @@ impl PollingScheduler {
             if !self.active_tasks.contains_key(&ep.id) {
                 let pool = self.pool.clone();
                 let client = self.client.clone();
+                let insecure_client = self.insecure_client.clone();
                 let semaphore = self.semaphore.clone();
                 let cancel_token = self.cancel_token.child_token();
                 let broadcast_tx = self.broadcast_tx.clone();
 
                 let handle = tokio::spawn(async move {
-                    start_endpoint_loop(ep.id, pool, client, semaphore, cancel_token, broadcast_tx)
-                        .await;
+                    start_endpoint_loop(
+                        ep.id,
+                        pool,
+                        client,
+                        insecure_client,
+                        semaphore,
+                        cancel_token,
+                        broadcast_tx,
+                    )
+                    .await;
                 });
 
                 self.active_tasks.insert(ep.id, handle);
@@ -106,6 +123,7 @@ async fn start_endpoint_loop(
     endpoint_id: i64,
     pool: crate::db::DbPool,
     client: reqwest::Client,
+    insecure_client: reqwest::Client,
     semaphore: Arc<Semaphore>,
     cancel_token: CancellationToken,
     broadcast_tx: Option<tokio::sync::broadcast::Sender<crate::api::sse::StatusEvent>>,
@@ -161,7 +179,12 @@ async fn start_endpoint_loop(
                     Err(_) => break, // Semaphore closed, shutdown
                 };
 
-                let res = crate::polling::worker::execute_probe(&endpoint, &client).await;
+                let active_client = if endpoint.ignore_tls_errors {
+                    &insecure_client
+                } else {
+                    &client
+                };
+                let res = crate::polling::worker::execute_probe(&endpoint, active_client).await;
                 drop(permit); // Release permit immediately
 
                 // Log metric
@@ -182,6 +205,7 @@ async fn start_endpoint_loop(
                     &pool,
                     &endpoint,
                     res.is_success,
+                    res.error_message.clone(),
                     broadcast_tx.as_ref(),
                 )
                 .await
@@ -217,6 +241,18 @@ mod tests {
             15,
             3,
             0.20,
+            None,
+            "GET",
+            None,
+            "200-299",
+            false,
+            900,
+            "HTTP",
+            None,
+            None,
+            None,
+            None,
+            None,
             None,
         )
         .await
@@ -254,6 +290,18 @@ mod tests {
             3,
             0.20,
             None,
+            "GET",
+            None,
+            "200-299",
+            false,
+            900,
+            "HTTP",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
         )
         .await
         .unwrap();
@@ -265,8 +313,18 @@ mod tests {
         // Spawn start_endpoint_loop
         let loop_token = cancel_token.child_token();
         let pool_clone = pool.clone();
+        let client_insecure = client.clone();
         let handle = tokio::spawn(async move {
-            start_endpoint_loop(endpoint.id, pool_clone, client, semaphore, loop_token, None).await;
+            start_endpoint_loop(
+                endpoint.id,
+                pool_clone,
+                client,
+                client_insecure,
+                semaphore,
+                loop_token,
+                None,
+            )
+            .await;
         });
 
         // Sleep briefly to ensure loop started
