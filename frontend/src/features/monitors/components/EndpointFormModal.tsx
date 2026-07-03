@@ -115,14 +115,15 @@ const EndpointFormSchema = z.object({
       });
     }
   } else if (['POSTGRES', 'MYSQL', 'REDIS'].includes(data.monitor_type)) {
-    const connStr = (data.db_connection_string || '').trim();
-    if (!connStr) {
+    const raw = data.db_connection_string || '';
+    if (!raw) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['db_connection_string'],
         message: "Database connection string is required",
       });
-    } else if (connStr !== '********') {
+    } else if (raw !== '********') {
+      const connStr = raw.trim();
       const lower = connStr.toLowerCase();
       if (data.monitor_type === 'POSTGRES' && !lower.startsWith('postgresql://') && !lower.startsWith('postgres://')) {
         ctx.addIssue({
