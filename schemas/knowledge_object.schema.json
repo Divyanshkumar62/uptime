@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "KnowledgeObject",
+  "type": "OBJECT",
+  "properties": {
+    "id": {
+      "type": "STRING",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[4][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+      "description": "UUIDv4 identifier for the knowledge object."
+    },
+    "version": {
+      "type": "STRING",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semantic versioning representation."
+    },
+    "title": {
+      "type": "STRING",
+      "description": "Human-readable title of the note."
+    },
+    "category": {
+      "type": "STRING",
+      "enum": ["Concept", "Pattern", "Lesson", "Diagnostic", "Career"],
+      "description": "Domain category of the knowledge."
+    },
+    "epistemic_status": {
+      "type": "STRING",
+      "enum": ["Fact", "Opinion", "Hypothesis", "Question", "Research"],
+      "description": "Epistemological classification of the information."
+    },
+    "verification_status": {
+      "type": "STRING",
+      "enum": ["Draft", "Verified", "Conflicted", "Deprecated"],
+      "description": "Validation status of the content."
+    },
+    "archival_status": {
+      "type": "STRING",
+      "enum": ["Active", "Dormant", "Archived", "Deprecated"],
+      "description": "Usage state in the lifecycle of knowledge."
+    },
+    "confidence_score": {
+      "type": "NUMBER",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Self-assessed precision/truth score of this knowledge."
+    },
+    "source_references": {
+      "type": "ARRAY",
+      "items": {
+        "type": "STRING",
+        "pattern": "^source:[a-zA-Z0-9_-]+:[\\/a-zA-Z0-9_.-]+(#L[0-9]+(-L[0-9]+)?)?$"
+      },
+      "description": "Storage-agnostic references to codebase symbols, files, or web pages."
+    },
+    "learning_metrics": {
+      "type": "OBJECT",
+      "properties": {
+        "seen_count": { "type": "INTEGER", "minimum": 0 },
+        "practiced_count": { "type": "INTEGER", "minimum": 0 },
+        "applied_count": { "type": "INTEGER", "minimum": 0 },
+        "explained_count": { "type": "INTEGER", "minimum": 0 },
+        "taught_count": { "type": "INTEGER", "minimum": 0 },
+        "retention_score": { "type": "NUMBER", "minimum": 0.0, "maximum": 1.0 },
+        "mastered": { "type": "BOOLEAN" }
+      },
+      "required": ["seen_count", "practiced_count", "applied_count", "explained_count", "taught_count", "retention_score", "mastered"]
+    },
+    "relations": {
+      "type": "ARRAY",
+      "items": {
+        "type": "OBJECT",
+        "properties": {
+          "target_id": {
+            "type": "STRING",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          },
+          "type": {
+            "type": "STRING",
+            "enum": ["depends_on", "implements", "contradicts", "replaces", "prerequisite_of", "complements", "exemplifies"]
+          }
+        },
+        "required": ["target_id", "type"]
+      },
+      "description": "Graph relationships between this and other knowledge objects."
+    },
+    "content": {
+      "type": "OBJECT",
+      "properties": {
+        "summary": { "type": "STRING" },
+        "body_markdown": { "type": "STRING" }
+      },
+      "required": ["summary", "body_markdown"]
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "title",
+    "category",
+    "epistemic_status",
+    "verification_status",
+    "archival_status",
+    "confidence_score",
+    "source_references",
+    "learning_metrics",
+    "relations",
+    "content"
+  ]
+}

@@ -1,0 +1,46 @@
+# Dependencies
+/target
+Cargo.lock
+
+# AI agent tools
+.agents/
+engineering-vault/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment / Secrets
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+*.o
+*.so
+*.dylib
+*.dll
+
+# Logs
+*.log
+
+# SQLite
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Documentation & Reports
+/docs/
+/scripts/
+*.md
+!README.md
+
+# Frontend build
+frontend/dist/
