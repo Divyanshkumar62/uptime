@@ -104,10 +104,10 @@
   --color-on-tertiary-fixed-variant: #005137;
 
   /* Error */
-  --color-error: #ffb4ab;
-  --color-on-error: #690005;
-  --color-error-container: #93000a;
-  --color-on-error-container: #ffdad6;
+  --color-error: #ff0033;
+  --color-on-error: #ffffff;
+  --color-error-container: #ff4d6a;
+  --color-on-error-container: #3d0009;
 
   /* Background & Legacy aliases */
   --color-bg-base: #101419;
@@ -124,13 +124,13 @@
 
   /* Status */
   --color-success: #4edea3;
-  --color-destructive: #ffb4ab;
+  --color-destructive: #ff0033;
   --color-warning: #f59e0b;
   --color-inactive: #86948a;
   --color-lime-accent: #D9F99D;
 
   --color-success-bg: rgba(78, 222, 163, 0.1);
-  --color-destructive-bg: rgba(255, 180, 171, 0.1);
+  --color-destructive-bg: rgba(255, 0, 51, 0.1);
   --color-inactive-bg: rgba(134, 148, 138, 0.1);
   --color-warning-bg: rgba(245, 158, 11, 0.15);
 
@@ -225,10 +225,10 @@ html:not(.dark) {
   --color-tertiary-fixed: #9cf0d6;
   --color-tertiary-fixed-dim: #5fd8bb;
 
-  --color-error: #dc2626;
+  --color-error: #ff0033;
   --color-on-error: #ffffff;
-  --color-error-container: #fca5a5;
-  --color-on-error-container: #450a0a;
+  --color-error-container: #ff4d6a;
+  --color-on-error-container: #3d0009;
 
   --color-bg-base: #f8fafb;
   --color-bg-surface: #ffffff;
@@ -242,13 +242,13 @@ html:not(.dark) {
   --color-text-muted: #73777f;
 
   --color-success: #059669;
-  --color-destructive: #dc2626;
+  --color-destructive: #ff0033;
   --color-warning: #d97706;
   --color-inactive: #9ca3af;
   --color-lime-accent: #65a30d;
 
   --color-success-bg: rgba(5, 150, 105, 0.08);
-  --color-destructive-bg: rgba(220, 38, 38, 0.08);
+  --color-destructive-bg: rgba(255, 0, 51, 0.08);
   --color-inactive-bg: rgba(156, 163, 175, 0.08);
   --color-warning-bg: rgba(217, 119, 6, 0.1);
 
@@ -347,7 +347,7 @@ body {
 }
 .custom-input.input-error {
   --focus-color: var(--color-destructive);
-  --focus-ring: rgba(255, 180, 171, 0.2);
+  --focus-ring: rgba(255, 0, 51, 0.2);
 }
 .custom-input:focus {
   border-color: var(--focus-color) !important;
